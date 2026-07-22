@@ -33,3 +33,6 @@ RADIO EN INTERACTIE
 LOGO
 - De bestaande assets/djizzel-radio-logo.png heeft voorrang en blijft dus het door de eigenaar gekozen logo.
 - Een nieuwe horizontale SVG-noodvariant wordt gebruikt wanneer de PNG ontbreekt.
+
+BUILD
+- PHP- en JavaScriptvalidatie worden automatisch uitgevoerd voordat het installatiemapje wordt verpakt.
