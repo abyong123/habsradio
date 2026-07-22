@@ -8,6 +8,12 @@ on:
     paths:
       - 'DjizzelRadio/**'
       - '.github/workflows/build-djizzel.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'DjizzelRadio/**'
+      - '.github/workflows/build-djizzel.yml'
 
 permissions:
   contents: read
