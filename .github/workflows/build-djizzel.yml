@@ -1,0 +1,49 @@
+name: Build Djizzel Radio Login
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'DjizzelRadio/**'
+      - '.github/workflows/build-djizzel.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out package
+        uses: actions/checkout@v4
+
+      - name: Validate PHP
+        run: |
+          php -l DjizzelRadio/login.php
+          php -l DjizzelRadio/fetch_active_users.php
+
+      - name: Validate JavaScript
+        run: node --check DjizzelRadio/assets/djizzel-login.js
+
+      - name: Verify CodyChat native routes
+        run: |
+          grep -q 'data-boom="box/login"' DjizzelRadio/login.php
+          grep -q 'data-boom="box/registration"' DjizzelRadio/login.php
+          grep -q 'data-boom="box/guest_login"' DjizzelRadio/login.php
+          grep -q 'data-boom="box/language"' DjizzelRadio/login.php
+
+      - name: Stage installable folder
+        run: |
+          mkdir -p build
+          cp -R DjizzelRadio build/DjizzelRadio
+
+      - name: Upload installable ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DjizzelRadio-CodyChat-V11-Dutch-Pro-v5
+          path: build/
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 30
