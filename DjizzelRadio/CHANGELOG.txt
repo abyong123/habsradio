@@ -1,0 +1,35 @@
+DJIZZEL RADIO CODYCHAT V11 LOGIN — V5.0.0
+========================================
+
+VOLLEDIG OPNIEUW ONTWORPEN
+- Eén rustige, professionele voettekst; de dubbele zwarte CodyChat-voettekst is verwijderd.
+- Nieuwe moderne systeemtypografie zonder pixel-, arcade- of gaminglettertype in accountformulieren.
+- Minder oranje gloed, dunnere randen, betere witruimte en een rustiger visueel ritme.
+- Responsive hero, radiokaart, actieve leden, voordelen en footer.
+
+CODYCHAT ACCOUNTFORMULIEREN
+- Login, registratie, wachtwoordherstel, gastlogin en taalkeuze gebruiken nog steeds CodyChat native box-routes.
+- Professionele modalbreedte, backdrop, koptekst, sluitknop, invoervelden, selects, meldingen en knoppen.
+- Dubbele invoerveldranden en bruine geneste formuliercontainers worden geforceerd verwijderd.
+- Registratieformulier krijgt een bredere, overzichtelijke lay-out.
+- Geboortedatumvelden reageren netjes op desktop en mobiel.
+- Engelse standaardteksten worden waar nodig dynamisch naar Nederlands vertaald.
+
+DYNAMISCHE CODYCHAT-GEGEVENS
+- De hero toont automatisch $setting['title'] als hoofdtitel.
+- De hero toont automatisch $setting['description'] als hoofdtekst.
+- Registratie en gasttoegang worden alleen getoond wanneer CodyChat ze toestaat.
+- Bridge-login blijft ondersteund.
+- De radiokaart gebruikt $player['stream_url'] en $player['stream_alias'].
+- Actieve leden worden rechtstreeks uit boom_users geladen.
+
+RADIO EN INTERACTIE
+- Afspelen, pauzeren, dempen en volume.
+- Nederlandse spelerstatussen en foutmeldingen.
+- Draaiende vinylplaat en subtiele equalizer alleen tijdens afspelen.
+- Actieve leden worden elke 30 seconden vernieuwd.
+- Geen click interception op .boom_request; CodyChat houdt volledige controle over accountacties.
+
+LOGO
+- De bestaande assets/djizzel-radio-logo.png heeft voorrang en blijft dus het door de eigenaar gekozen logo.
+- Een nieuwe horizontale SVG-noodvariant wordt gebruikt wanneer de PNG ontbreekt.
