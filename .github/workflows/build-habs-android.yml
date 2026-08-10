@@ -1,14 +1,15 @@
-name: Build HABS Android APK
+name: Build HABS Android Full-Parity APK
 
 on:
   push:
-    branches: [android-broadcaster-v1]
+    branches: [android-full-parity-v2]
     paths:
-      - 'android-app/**'
+      - 'android-v2-src/**'
       - '.github/workflows/build-habs-android.yml'
   pull_request:
+    branches: [main]
     paths:
-      - 'android-app/**'
+      - 'android-v2-src/**'
       - '.github/workflows/build-habs-android.yml'
   workflow_dispatch:
 
@@ -18,10 +19,36 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
-      - name: Checkout
+      - name: Checkout full-parity branch
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct exact desktop HABS source and Android host
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch origin macos-broadcaster-v1
+          git checkout origin/macos-broadcaster-v1 -- macos-src/chunks
+          mkdir -p workspace
+          cat macos-src/chunks/*.b64 | base64 --decode > workspace/habs-desktop-src.tar.gz
+          tar -xzf workspace/habs-desktop-src.tar.gz -C workspace
+          test -f workspace/app/main.go
+          mv workspace/app workspace/backend
+
+          cat android-v2-src/backend-patch-xz/*.b64 | base64 --decode | xz -dc > workspace/android-backend.patch
+          (cd workspace/backend && git apply ../android-backend.patch)
+          test -f workspace/backend/system_loopback_android.go
+          test -f workspace/backend/web/index.html
+          test -f workspace/backend/web/dj.js
+          test -f workspace/backend/web/multistream.js
+
+          base64 --decode android-v2-src/android-app-v2.tar.gz.b64 > workspace/android-app.tar.gz
+          tar -xzf workspace/android-app.tar.gz -C workspace
+          test -f workspace/android-app/app/src/main/java/com/habsradio/broadcaster/MainActivity.java
+          test -f workspace/android-app/app/src/main/java/com/habsradio/broadcaster/BroadcastService.java
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -35,22 +62,68 @@ jobs:
       - name: Install Android SDK packages
         run: yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23.2'
+          cache-dependency-path: workspace/backend/go.sum
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
 
-      - name: Build debug APK
-        working-directory: android-app
+      - name: Test HABS backend and frontend contracts
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd workspace/backend
+          go test ./...
+          for file in web/app.js web/dj.js web/multistream.js web/linked-music.js; do
+            node --check "$file"
+          done
+          grep -q 'DJ STUDIO' web/index.html
+          grep -q 'Audio Inputs' web/index.html
+          grep -q 'Linked Music' web/index.html
+          grep -q 'YouTube Queue' web/index.html
+          grep -q 'Audio Processing' web/index.html
+          grep -q 'Metadata' web/index.html
+          grep -q 'Preferences' web/index.html
+          grep -q 'android-nav-open' web/app.css
+          grep -q 'HABSAndroid' web/app.js
+
+      - name: Build native Android HABS engine
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p workspace/android-app/app/src/main/jniLibs/arm64-v8a
+          cd workspace/backend
+          GOOS=android GOARCH=arm64 CGO_ENABLED=0 go build \
+            -trimpath -buildmode=pie -ldflags='-s -w' \
+            -o ../android-app/app/src/main/jniLibs/arm64-v8a/libhabsbackend.so .
+          file ../android-app/app/src/main/jniLibs/arm64-v8a/libhabsbackend.so
+
+      - name: Build Android APK
+        working-directory: workspace/android-app
         run: gradle --no-daemon :app:assembleDebug
 
-      - name: Rename APK
-        run: cp android-app/app/build/outputs/apk/debug/app-debug.apk HABS-Broadcaster-Android-v1.0.0-alpha.apk
+      - name: Verify and package APK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          APK='workspace/android-app/app/build/outputs/apk/debug/app-debug.apk'
+          test -s "$APK"
+          apksigner verify --verbose "$APK"
+          unzip -l "$APK" | grep 'lib/arm64-v8a/libhabsbackend.so'
+          cp "$APK" HABS_Broadcaster_Android_v1.1.0-parity-beta.apk
+          sha256sum HABS_Broadcaster_Android_v1.1.0-parity-beta.apk | tee HABS_Broadcaster_Android_v1.1.0-parity-beta_SHA256.txt
 
-      - name: Upload APK
+      - name: Upload installable APK
         uses: actions/upload-artifact@v4
         with:
-          name: HABS-Broadcaster-Android-APK
-          path: HABS-Broadcaster-Android-v1.0.0-alpha.apk
+          name: HABS-Broadcaster-Android-Full-Parity
+          path: |
+            HABS_Broadcaster_Android_v1.1.0-parity-beta.apk
+            HABS_Broadcaster_Android_v1.1.0-parity-beta_SHA256.txt
           if-no-files-found: error
           retention-days: 14
