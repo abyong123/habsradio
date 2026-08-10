@@ -40,8 +40,24 @@ jobs:
 
           cat android-v2-src/backend-patch-xz/*.b64 | base64 --decode | xz -dc > workspace/android-backend.patch
           (cd workspace/backend && git apply ../android-backend.patch)
+
+          # Desktop fallback files must not collide with Android-specific hosts.
+          if [ -f workspace/backend/system_loopback_other.go ]; then
+            sed -i '1c //go:build !windows && !darwin && !android' workspace/backend/system_loopback_other.go
+          fi
+          if [ -f workspace/backend/window_other.go ]; then
+            sed -i '1c //go:build !windows && !darwin && !android' workspace/backend/window_other.go
+          fi
+          if [ -f workspace/backend/native_bridge_other.go ]; then
+            sed -i '1c //go:build !darwin && !android' workspace/backend/native_bridge_other.go
+          fi
+
           cp android-v2-src/overrides/system_loopback_android.go workspace/backend/system_loopback_android.go
+          cp android-v2-src/overrides/window_android.go workspace/backend/window_android.go
+          cp android-v2-src/overrides/native_bridge_android.go workspace/backend/native_bridge_android.go
           test -f workspace/backend/system_loopback_android.go
+          test -f workspace/backend/native_bridge_android.go
+          test -f workspace/backend/window_android.go
           test -f workspace/backend/web/index.html
           test -f workspace/backend/web/dj.js
           test -f workspace/backend/web/multistream.js
@@ -50,6 +66,10 @@ jobs:
           tar -xzf workspace/android-app.tar.gz -C workspace
           test -f workspace/android-app/app/src/main/java/com/habsradio/broadcaster/MainActivity.java
           test -f workspace/android-app/app/src/main/java/com/habsradio/broadcaster/BroadcastService.java
+
+          # Use one high-entropy bridge token for both shared desktop-native and Android-native endpoints.
+          sed -i '/env.put("HABS_BRIDGE_TOKEN", bridgeToken);/a\                env.put("HABS_NATIVE_BRIDGE_TOKEN", bridgeToken);' \
+            workspace/android-app/app/src/main/java/com/habsradio/broadcaster/MainActivity.java
 
       - name: Set up Java 17
         uses: actions/setup-java@v4
@@ -74,12 +94,16 @@ jobs:
         with:
           gradle-version: '8.11.1'
 
-      - name: Test HABS backend and frontend contracts
+      - name: Test desktop core and shared frontend contracts
         shell: bash
         run: |
           set -euxo pipefail
+          rm -rf /tmp/habs-desktop-test
+          mkdir -p /tmp/habs-desktop-test
+          tar -xzf workspace/habs-desktop-src.tar.gz -C /tmp/habs-desktop-test
+          (cd /tmp/habs-desktop-test/app && go test ./...)
+
           cd workspace/backend
-          go test ./...
           for file in web/app.js web/dj.js web/multistream.js web/linked-music.js; do
             node --check "$file"
           done
