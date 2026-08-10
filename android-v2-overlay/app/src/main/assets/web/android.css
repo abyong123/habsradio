@@ -1,0 +1,134 @@
+/* HABS Broadcaster Android parity layer — touch-first responsive adaptation of desktop UI. */
+:root{--android-safe-top:env(safe-area-inset-top,0px);--android-safe-bottom:env(safe-area-inset-bottom,0px)}
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+body.android-app{touch-action:manipulation;user-select:none;-webkit-user-select:none}
+body.android-app input,body.android-app textarea,body.android-app select{user-select:text;-webkit-user-select:text}
+body.android-app button,body.android-app .btn,body.android-app .nav-item,body.android-app input[type=range],body.android-app select{min-height:44px}
+body.android-app .activation-note{font-size:12px;line-height:1.55}
+body.android-app .activation-card{max-height:calc(100dvh - 32px);overflow:auto}
+body.android-app .android-only{display:block}
+body.android-app .windows-only-copy{display:none!important}
+body.android-app .sidebar,body.android-app .topbar,body.android-app .statusbar{padding-left:max(10px,env(safe-area-inset-left));padding-right:max(10px,env(safe-area-inset-right))}
+body.android-app .topbar{padding-top:max(8px,var(--android-safe-top))}
+body.android-app .statusbar{padding-bottom:max(6px,var(--android-safe-bottom))}
+body.android-app .content{scrollbar-width:none}
+body.android-app .content::-webkit-scrollbar,body.android-app #nav::-webkit-scrollbar{display:none}
+body.android-app .dj-deck,body.android-app .dj-mixer,body.android-app .card{contain:layout paint;transform:translateZ(0)}
+body.android-app .dj-main-controls button,body.android-app .dj-hotcues button,body.android-app .dj-pads button{touch-action:manipulation}
+body.android-app .dj-pad-help{display:none}
+body.android-app .dj-library-drop-strip,body.android-app #dropZone{cursor:pointer}
+body.android-app .dj-library-drop-strip:active,body.android-app #dropZone:active{filter:brightness(1.25)}
+body.android-app .icon-top#quitApp,body.android-app #quitApp2{display:none!important}
+body.android-app #captureSystem,body.android-app #captureSystem2{white-space:normal;line-height:1.15}
+body.android-app .security-note b:after{content:' • ANDROID'}
+body.android-app .native-android-badge{display:inline-flex;gap:6px;align-items:center;border:1px solid color-mix(in srgb,var(--accent) 36%,transparent);background:color-mix(in srgb,var(--accent) 10%,transparent);color:var(--accent);border-radius:999px;padding:5px 9px;font-size:9px;font-weight:900;letter-spacing:.08em}
+body.android-app .native-android-badge:before{content:'●';font-size:8px;filter:drop-shadow(0 0 6px currentColor)}
+
+@media (max-width:1180px){
+  body.android-app .sidebar{width:86px}
+  body.android-app .logo-block>div,body.android-app .nav-item span,body.android-app .side-status>div,body.android-app .license-mini,body.android-app .side-footer{display:none}
+  body.android-app .logo-block{justify-content:center;padding:12px 4px}
+  body.android-app .logo-block img{width:48px;height:48px}
+  body.android-app .nav-item{justify-content:center;padding:10px 6px}
+  body.android-app .nav-item i{font-size:20px}
+  body.android-app .main-shell{margin-left:86px}
+  body.android-app .dj-decks-grid{grid-template-columns:minmax(0,1fr) minmax(250px,.62fr) minmax(0,1fr)}
+}
+
+@media (max-width:820px){
+  body.android-app .app{display:block;min-height:100dvh}
+  body.android-app .sidebar{position:fixed!important;z-index:500;left:0!important;right:0!important;top:auto!important;bottom:0!important;width:auto!important;height:calc(68px + var(--android-safe-bottom))!important;display:block!important;padding:0 4px var(--android-safe-bottom)!important;border-right:0!important;border-top:1px solid color-mix(in srgb,var(--accent) 24%,#18271d)!important;background:rgba(2,8,5,.96)!important;backdrop-filter:blur(18px)}
+  body.android-app .sidebar .logo-block,body.android-app .side-status,body.android-app .license-mini,body.android-app .side-footer{display:none!important}
+  body.android-app #nav{display:flex!important;flex-direction:row!important;gap:3px!important;overflow-x:auto!important;overflow-y:hidden!important;height:68px!important;padding:6px 2px!important;scroll-snap-type:x proximity}
+  body.android-app .nav-item{min-width:72px!important;width:72px!important;height:56px!important;display:flex!important;flex-direction:column!important;justify-content:center!important;gap:2px!important;padding:5px!important;border-radius:12px!important;scroll-snap-align:start}
+  body.android-app .nav-item i{font-size:17px!important;line-height:1!important}
+  body.android-app .nav-item span{display:block!important;font-size:8px!important;line-height:1.05!important;text-align:center!important;max-width:68px;white-space:normal}
+  body.android-app .main-shell{margin-left:0!important;padding-bottom:calc(70px + var(--android-safe-bottom));min-height:100dvh}
+  body.android-app .topbar{position:sticky;top:0;z-index:300;height:auto!important;min-height:74px;display:grid!important;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px 10px 9px!important;background:rgba(2,9,5,.96)!important;backdrop-filter:blur(16px);border-bottom:1px solid color-mix(in srgb,var(--accent) 20%,#142119)}
+  body.android-app .top-title{min-width:0}
+  body.android-app .top-title b{font-size:16px}
+  body.android-app .top-title span{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:55vw}
+  body.android-app .engine-badge{grid-column:1/3;grid-row:2;justify-self:start;font-size:9px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.android-app .top-actions{grid-column:2;grid-row:1;display:flex!important;gap:5px;align-items:center}
+  body.android-app .top-actions #saveSettings{display:none}
+  body.android-app .top-actions .broadcast-toggle{min-width:138px;height:46px;padding:0 10px;font-size:10px}
+  body.android-app .content{padding:9px!important;overflow-x:hidden!important}
+  body.android-app .statusbar{display:none!important}
+  body.android-app .section-head{align-items:flex-start;gap:8px;flex-direction:column}
+  body.android-app .section-head h1{font-size:21px}
+  body.android-app .section-head>div:last-child:not(:first-child),body.android-app .section-head>.button-row{width:100%}
+  body.android-app .section-head .button-row{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  body.android-app .hero-grid,body.android-app .dashboard-grid,body.android-app .settings-grid.two,body.android-app .audio-layout,body.android-app .stream-layout,body.android-app .youtube-workspace,body.android-app .linked-services-grid{grid-template-columns:1fr!important}
+  body.android-app .dj-toolbar{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:10px}
+  body.android-app .dj-toolbar-controls{display:grid!important;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+  body.android-app .dj-toolbar-controls label{grid-column:1/3}
+  body.android-app .dj-decks-grid{display:grid!important;grid-template-columns:1fr!important;gap:9px!important}
+  body.android-app .dj-deck.deck-a{order:1}
+  body.android-app .dj-mixer{order:2}
+  body.android-app .dj-deck.deck-b{order:3}
+  body.android-app .dj-deck{padding:10px!important;border-radius:18px!important}
+  body.android-app .dj-deck-head{grid-template-columns:42px minmax(0,1fr) 64px!important;gap:7px!important}
+  body.android-app .deck-letter{width:42px!important;height:42px!important;font-size:20px!important}
+  body.android-app .deck-track-meta b{font-size:12px!important}
+  body.android-app .deck-track-meta small{font-size:9px!important}
+  body.android-app .dj-wave-wrap{height:105px!important}
+  body.android-app .dj-main-controls{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:5px!important}
+  body.android-app .dj-main-controls button,body.android-app .dj-main-controls select{font-size:9px!important;padding:3px!important;min-width:0!important}
+  body.android-app .dj-hotcues{gap:5px!important}
+  body.android-app .dj-hotcues button{min-height:44px!important}
+  body.android-app .dj-deck-knobs{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px 6px!important}
+  body.android-app .dj-pitch-row{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  body.android-app .dj-pitch-row>label:first-child{grid-column:1/3}
+  body.android-app .dj-mixer-body{grid-template-columns:68px minmax(0,1fr) 68px!important;gap:7px!important}
+  body.android-app .dj-channel-strip{min-width:0!important}
+  body.android-app .dj-vertical{height:125px!important}
+  body.android-app .dj-master-ring{width:88px!important;height:88px!important}
+  body.android-app .dj-autodj{display:grid!important;grid-template-columns:1fr 1fr!important;gap:7px!important}
+  body.android-app .dj-auto-title,body.android-app .dj-auto-status{grid-column:1/3!important}
+  body.android-app #djAutoToggle{grid-column:1/3!important}
+  body.android-app .dj-bottom-grid{grid-template-columns:1fr!important;gap:9px!important}
+  body.android-app .dj-browser .card-title{align-items:flex-start!important;flex-direction:column!important;gap:7px}
+  body.android-app .dj-browser .card-title>div{width:100%;display:flex;gap:5px}
+  body.android-app .dj-browser .card-title input{min-width:0;flex:1}
+  body.android-app .dj-library-drop-strip{padding:12px!important}
+  body.android-app .dj-pads{grid-template-columns:repeat(4,1fr)!important;gap:6px!important}
+  body.android-app .habs-player{grid-template-columns:48px 48px 46px minmax(40px,1fr) 46px 48px!important;gap:4px!important}
+  body.android-app .habs-player .player-volume{display:none!important}
+  body.android-app .source-row{grid-template-columns:18px 94px minmax(70px,1fr) 48px!important}
+  body.android-app .form-grid,body.android-app .encoder-grid,body.android-app .processing-grid{grid-template-columns:1fr!important}
+  body.android-app .stream-editor-grid{grid-template-columns:1fr!important}
+  body.android-app .stream-profile-card{grid-template-columns:12px minmax(0,1fr) auto!important;gap:7px!important}
+  body.android-app .stream-card-state{grid-column:2/4;text-align:left!important}
+  body.android-app .youtube-entry-v2>div{display:grid!important;grid-template-columns:1fr 1fr;gap:7px}
+  body.android-app .youtube-queue-toolbar{display:grid!important;grid-template-columns:1fr 1fr;gap:7px}
+  body.android-app .youtube-transport{display:grid!important;grid-template-columns:repeat(4,48px) minmax(0,1fr)!important;gap:5px}
+  body.android-app .yt-volume{grid-column:1/-1!important}
+  body.android-app .service-player iframe{min-height:152px!important}
+  body.android-app .linked-actions{display:grid!important;grid-template-columns:1fr 1fr;gap:7px}
+  body.android-app .linked-actions .btn:first-child{grid-column:1/3}
+  body.android-app .apple-player-bar{grid-template-columns:44px 50px 44px minmax(0,1fr)!important;gap:5px!important}
+  body.android-app .apple-volume{grid-column:1/-1!important}
+  body.android-app .activation-gate{padding:max(14px,var(--android-safe-top)) 14px max(14px,var(--android-safe-bottom))!important}
+  body.android-app .activation-card{width:100%!important;border-radius:24px!important;padding:22px!important}
+}
+
+@media (max-width:480px){
+  body.android-app .top-title span{display:none}
+  body.android-app .engine-badge{max-width:calc(100vw - 20px)}
+  body.android-app .top-actions .broadcast-toggle{min-width:128px;font-size:9px}
+  body.android-app .dj-deck-knobs{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  body.android-app .dj-main-controls{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  body.android-app .dj-main-controls select{grid-column:4}
+  body.android-app .dj-mixer-body{grid-template-columns:60px minmax(0,1fr) 60px!important}
+  body.android-app .dj-master-ring{width:76px!important;height:76px!important}
+  body.android-app .dj-pads{grid-template-columns:repeat(2,1fr)!important}
+  body.android-app .habs-player{grid-template-columns:44px 44px 42px minmax(30px,1fr) 42px 44px!important}
+  body.android-app .player-time{font-size:8px!important}
+}
+
+@media (orientation:landscape) and (min-width:821px){
+  body.android-app .sidebar{width:92px}
+  body.android-app .main-shell{margin-left:92px}
+  body.android-app .dj-decks-grid{grid-template-columns:minmax(310px,1fr) minmax(250px,.66fr) minmax(310px,1fr)!important}
+  body.android-app .dj-wave-wrap{height:130px}
+}
