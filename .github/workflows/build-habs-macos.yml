@@ -105,6 +105,7 @@ jobs:
           done
           test -s build/backend-smoke.url
           URL="$(tr -d '\r\n' < build/backend-smoke.url)"
+          URL="${URL%/}"
           echo "Backend URL: $URL"
           curl --fail --silent --show-error --max-time 5 "$URL/api/info" | tee build/backend-info.json
           curl --fail --silent --show-error --max-time 5 "$URL/" -o build/backend-index.html
@@ -204,6 +205,7 @@ jobs:
             exit 1
           fi
           URL="$(tr -d '\r\n' < "$URLFILE")"
+          URL="${URL%/}"
           echo "Packaged app backend URL: $URL"
           curl --fail --silent --show-error --max-time 5 "$URL/api/info" | tee build/app-runtime-info.json
           curl --fail --silent --show-error --max-time 5 "$URL/" -o build/app-runtime-index.html
