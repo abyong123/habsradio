@@ -34,6 +34,16 @@ jobs:
           tar -xzf macos-work/src.tar.gz -C macos-work
           test -f macos-work/app/main.go
           test -f macos-work/macos/HABSMacApp.swift
+          test -f macos-work/macos/Info.plist
+
+      - name: Inspect Mac host and bundle metadata
+        shell: bash
+        run: |
+          set -euxo pipefail
+          echo '===== HABSMacApp.swift ====='
+          sed -n '1,360p' macos-work/macos/HABSMacApp.swift
+          echo '===== Info.plist ====='
+          cat macos-work/macos/Info.plist
 
       - name: Test Go backend
         shell: bash
@@ -53,6 +63,23 @@ jobs:
           cd ../..
           lipo -create build/HABSBackend_x86_64 build/HABSBackend_arm64 -output build/HABSBackend
           lipo -info build/HABSBackend
+
+      - name: Smoke test backend executable
+        shell: bash
+        run: |
+          set -euxo pipefail
+          chmod +x build/HABSBackend
+          ./build/HABSBackend > build/backend-smoke.log 2>&1 &
+          PID=$!
+          sleep 3
+          if ! kill -0 "$PID" 2>/dev/null; then
+            echo 'Backend exited during smoke test:'
+            cat build/backend-smoke.log || true
+            exit 1
+          fi
+          kill "$PID" || true
+          wait "$PID" || true
+          cat build/backend-smoke.log || true
 
       - name: Build Universal native Mac app
         shell: bash
@@ -95,6 +122,18 @@ jobs:
             /usr/libexec/PlistBuddy -c 'Delete :CFBundleIconFile' "$APP/Contents/Info.plist" || true
           fi
 
+      - name: Verify bundle layout
+        shell: bash
+        run: |
+          set -euxo pipefail
+          APP='build/HABS Broadcaster.app'
+          test -x "$APP/Contents/MacOS/HABS Broadcaster"
+          test -x "$APP/Contents/Resources/HABSBackend"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Contents/Info.plist" | grep -Fx 'HABS Broadcaster'
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist"
+          file "$APP/Contents/MacOS/HABS Broadcaster"
+          file "$APP/Contents/Resources/HABSBackend"
+
       - name: Ad-hoc sign and verify
         shell: bash
         run: |
@@ -104,22 +143,35 @@ jobs:
           codesign --force --deep --sign - --timestamp=none "$APP"
           codesign --verify --deep --strict --verbose=2 "$APP"
           plutil -lint "$APP/Contents/Info.plist"
+          spctl --assess --type execute --verbose=4 "$APP" || true
 
       - name: Create DMG
         shell: bash
         run: |
           set -euxo pipefail
+          rm -rf build/dmgroot
           mkdir -p build/dmgroot
-          cp -R 'build/HABS Broadcaster.app' build/dmgroot/
+          ditto 'build/HABS Broadcaster.app' 'build/dmgroot/HABS Broadcaster.app'
           ln -s /Applications build/dmgroot/Applications
-          hdiutil create -volname 'HABS Broadcaster' -srcfolder build/dmgroot -ov -format UDZO 'build/HABS_Broadcaster_macOS_v0.9.0.dmg'
-          shasum -a 256 'build/HABS_Broadcaster_macOS_v0.9.0.dmg' | tee build/SHA256SUMS.txt
+          hdiutil create -volname 'HABS Broadcaster' -srcfolder build/dmgroot -ov -format UDZO 'build/HABS_Broadcaster_macOS_v0.9.1.dmg'
+          hdiutil verify 'build/HABS_Broadcaster_macOS_v0.9.1.dmg'
+          shasum -a 256 'build/HABS_Broadcaster_macOS_v0.9.1.dmg' | tee build/SHA256SUMS.txt
+
+      - name: Upload diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HABS-Broadcaster-macOS-Diagnostics
+          path: |
+            build/backend-smoke.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: HABS-Broadcaster-macOS-DMG
+          name: HABS-Broadcaster-macOS-DMG-v0.9.1
           path: |
-            build/HABS_Broadcaster_macOS_v0.9.0.dmg
+            build/HABS_Broadcaster_macOS_v0.9.1.dmg
             build/SHA256SUMS.txt
           retention-days: 14
