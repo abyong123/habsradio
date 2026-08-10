@@ -9,12 +9,14 @@
   <application
       android:theme="@style/AppTheme"
       android:label="HABS Broadcaster"
-      android:icon="@drawable/habs_icon"
-      android:roundIcon="@drawable/habs_icon"
+      android:icon="@drawable/ic_habs"
+      android:roundIcon="@drawable/ic_habs"
       android:usesCleartextTraffic="true"
       android:allowAudioPlaybackCapture="true"
       android:hardwareAccelerated="true"
-      android:largeHeap="true">
+      android:largeHeap="true"
+      android:allowBackup="false"
+      android:supportsRtl="true">
     <activity
         android:name=".MainActivity"
         android:screenOrientation="unspecified"
