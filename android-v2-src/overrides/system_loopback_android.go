@@ -12,8 +12,8 @@ import (
 
 // Android SystemLoopback is a small broker. The native Android host owns
 // MediaProjection/AudioPlaybackCapture and pushes PCM16 here over localhost.
-// The unchanged HABS WebAudio frontend then consumes the same framed float32
-// stream that the Windows WASAPI implementation exposes.
+// The shared HABS WebAudio frontend consumes the same framed float32 stream
+// that the desktop native system-audio implementations expose.
 type SystemLoopback struct {
 	mu          sync.RWMutex
 	running     bool
@@ -43,6 +43,12 @@ func (s *SystemLoopback) Stop() {
 }
 
 func (s *SystemLoopback) Restart() error { return s.Start() }
+
+func (s *SystemLoopback) SetError(message string) {
+	s.mu.Lock()
+	s.lastError = message
+	s.mu.Unlock()
+}
 
 func (s *SystemLoopback) Info() NativeSystemAudioInfo {
 	s.mu.RLock()
@@ -81,6 +87,38 @@ func (s *SystemLoopback) Subscribe() (<-chan []byte, func()) {
 	}
 }
 
+func (s *SystemLoopback) broadcastFramed(packet []byte) {
+	if len(packet) == 0 {
+		return
+	}
+	s.mu.Lock()
+	s.running = true
+	s.lastPacket = time.Now()
+	s.lastError = ""
+	for ch := range s.subscribers {
+		cp := append([]byte(nil), packet...)
+		select {
+		case ch <- cp:
+		default:
+			select {
+			case <-ch:
+			default:
+			}
+			select {
+			case ch <- cp:
+			default:
+			}
+		}
+	}
+	s.mu.Unlock()
+}
+
+// PushFramed accepts an already HPCM-framed float32 packet. This preserves the
+// shared native bridge used by the Mac host and future Android host revisions.
+func (s *SystemLoopback) PushFramed(packet []byte) {
+	s.broadcastFramed(packet)
+}
+
 func (s *SystemLoopback) PushPCM16(raw []byte, sampleRate, channels int) error {
 	if sampleRate < 8000 || sampleRate > 192000 {
 		return errors.New("invalid Android playback sample rate")
@@ -106,28 +144,10 @@ func (s *SystemLoopback) PushPCM16(raw []byte, sampleRate, channels int) error {
 		binary.LittleEndian.PutUint32(payload[(i*2)*4:], math.Float32bits(l))
 		binary.LittleEndian.PutUint32(payload[(i*2+1)*4:], math.Float32bits(r))
 	}
-	packet := frameNativePCM(sampleRate, 2, frames, payload)
 	s.mu.Lock()
-	s.running = true
 	s.sampleRate = sampleRate
 	s.channels = 2
-	s.lastPacket = time.Now()
-	s.lastError = ""
-	for ch := range s.subscribers {
-		cp := append([]byte(nil), packet...)
-		select {
-		case ch <- cp:
-		default:
-			select {
-			case <-ch:
-			default:
-			}
-			select {
-			case ch <- cp:
-			default:
-			}
-		}
-	}
 	s.mu.Unlock()
+	s.broadcastFramed(frameNativePCM(sampleRate, 2, frames, payload))
 	return nil
 }
