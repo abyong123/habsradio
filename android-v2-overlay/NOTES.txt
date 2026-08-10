@@ -1,0 +1,1 @@
+Android parity build uses Android 10+ (API 29+) so AudioPlaybackCapture is available when the source app allows capture. MediaProjection consent is required by Android.
