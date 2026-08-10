@@ -1,0 +1,12 @@
+package com.habsradio.broadcaster;
+
+import org.json.*;
+
+public final class StreamTarget {
+    public String id="stream-1",name="Primary Stream",protocol="icecast2",host="",mount="/",username="source",password="",stationName="My Radio",genre="",stationUrl="",description="";
+    public int port=8000,sid=1,bitrate=128,channels=2,reconnectDelay=5,connectTimeout=12;
+    public boolean tls=false,enabled=true,autoReconnect=true,publicStream=false;
+    public static StreamTarget fromJson(JSONObject o){StreamTarget t=new StreamTarget();t.id=o.optString("id",t.id);t.name=o.optString("name",t.name);t.protocol=o.optString("protocol",o.optString("type",t.protocol));t.host=o.optString("host","").trim();t.port=o.optInt("port",8000);t.mount=o.optString("mount","/");t.sid=o.optInt("sid",1);t.username=o.optString("username","source");t.password=o.optString("password","");t.stationName=o.optString("station_name",o.optString("stationName","My Radio"));t.genre=o.optString("genre","");t.stationUrl=o.optString("station_url","");t.description=o.optString("description","");t.bitrate=Math.max(32,Math.min(320,o.optInt("bitrate",128)));t.channels=o.optInt("channels",2)==1?1:2;t.enabled=o.optBoolean("enabled",true);t.autoReconnect=o.optBoolean("auto_reconnect",true);t.reconnectDelay=Math.max(2,Math.min(60,o.optInt("reconnect_delay",5)));t.connectTimeout=Math.max(3,Math.min(60,o.optInt("connect_timeout",12)));t.publicStream=o.optBoolean("public_stream",false);t.tls=o.optBoolean("tls",false)||"icecast2-tls".equals(t.protocol);if("zeno".equals(t.protocol)){t.username=t.username==null||t.username.isEmpty()?"source":t.username;t.channels=2;}if(!isShoutcast(t.protocol)&&!t.mount.startsWith("/"))t.mount="/"+t.mount;return t;}
+    public JSONObject toJson(){JSONObject o=new JSONObject();try{o.put("id",id);o.put("name",name);o.put("protocol",protocol);o.put("host",host);o.put("port",port);o.put("mount",mount);o.put("sid",sid);o.put("username",username);o.put("password",password);o.put("station_name",stationName);o.put("genre",genre);o.put("station_url",stationUrl);o.put("description",description);o.put("bitrate",bitrate);o.put("channels",channels);o.put("enabled",enabled);o.put("auto_reconnect",autoReconnect);o.put("reconnect_delay",reconnectDelay);o.put("connect_timeout",connectTimeout);o.put("public_stream",publicStream);o.put("tls",tls);}catch(Exception ignored){}return o;}
+    public static boolean isShoutcast(String p){return p!=null&&p.toLowerCase().contains("shoutcast");}
+}
