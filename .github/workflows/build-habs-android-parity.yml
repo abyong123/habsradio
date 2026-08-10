@@ -1,0 +1,123 @@
+name: Build HABS Android Desktop Parity
+
+on:
+  push:
+    branches: [android-desktop-parity-v2]
+    paths:
+      - 'android-v2-overlay/**'
+      - 'android-v2-src/**'
+      - '.github/workflows/build-habs-android-parity.yml'
+  pull_request:
+    paths:
+      - 'android-v2-overlay/**'
+      - 'android-v2-src/**'
+      - '.github/workflows/build-habs-android-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Checkout parity branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Assemble parity source tree
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git fetch --depth=1 origin android-broadcaster-v1 macos-broadcaster-v1
+          git checkout origin/android-broadcaster-v1 -- android-app
+          git checkout origin/macos-broadcaster-v1 -- macos-src
+
+          rm -rf desktop-src
+          mkdir -p desktop-src
+          cat macos-src/chunks/*.b64 | base64 --decode > desktop-src/src.tar.gz
+          tar -xzf desktop-src/src.tar.gz -C desktop-src
+          test -f desktop-src/app/web/index.html
+          test -f desktop-src/app/web/app.css
+          test -f desktop-src/app/web/dj.js
+          test -f desktop-src/app/web/multistream.js
+          test -f desktop-src/app/web/linked-music.js
+
+          rm -rf android-app/app/src/main/assets/web
+          mkdir -p android-app/app/src/main/assets/web
+          cp -R desktop-src/app/web/. android-app/app/src/main/assets/web/
+
+          cp -R android-v2-overlay/. android-app/
+          cp android-app/app/src/main/assets/web/habs-icon.png android-app/app/src/main/res/drawable/habs_icon.png
+
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('android-app/app/src/main/assets/web/index.html')
+          s=p.read_text(encoding='utf-8')
+          if '/web/android.css' not in s:
+              s=s.replace('<link rel="stylesheet" href="/web/app.css">','<link rel="stylesheet" href="/web/app.css">\n  <link rel="stylesheet" href="/web/android.css">')
+          if '/web/android-adapter.js' not in s:
+              s=s.replace('<script src="/web/linked-music.js"></script>','<script src="/web/linked-music.js"></script>\n<script src="/web/android-adapter.js"></script>')
+          s=s.replace('on this PC. This installation','on this Android device. This installation')
+          s=s.replace('v0.8.9','v1.1.0 Android')
+          p.write_text(s,encoding='utf-8')
+          PY
+
+          test -f android-app/app/src/main/java/com/habsradio/broadcaster/LocalServer.java
+          test -f android-app/app/src/main/assets/web/android.css
+          test -f android-app/app/src/main/assets/web/android-adapter.js
+          grep -q '/web/android.css' android-app/app/src/main/assets/web/index.html
+          grep -q '/web/android-adapter.js' android-app/app/src/main/assets/web/index.html
+
+      - name: Static parity checks
+        shell: bash
+        run: |
+          set -euxo pipefail
+          grep -q 'DJ STUDIO' android-app/app/src/main/assets/web/index.html
+          grep -q 'LINKED MUSIC' android-app/app/src/main/assets/web/index.html
+          grep -q 'YOUTUBE' android-app/app/src/main/assets/web/index.html
+          grep -q 'AutoDJ' android-app/app/src/main/assets/web/index.html
+          grep -q 'Zeno.fm' android-app/app/src/main/assets/web/multistream.js
+          grep -q 'Spotify' android-app/app/src/main/assets/web/linked-music.js
+          grep -q 'AudioPlaybackCapture' android-app/app/src/main/java/com/habsradio/broadcaster/BroadcastService.java
+
+      - name: Build debug APK
+        working-directory: android-app
+        run: gradle --no-daemon :app:assembleDebug
+
+      - name: Package APK
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp android-app/app/build/outputs/apk/debug/app-debug.apk HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk
+          sha256sum HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk | tee SHA256SUMS.txt
+          unzip -t HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HABS-Broadcaster-Android-Desktop-Parity
+          path: |
+            HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk
+            SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
