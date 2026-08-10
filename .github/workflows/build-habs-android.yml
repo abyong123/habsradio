@@ -40,6 +40,7 @@ jobs:
 
           cat android-v2-src/backend-patch-xz/*.b64 | base64 --decode | xz -dc > workspace/android-backend.patch
           (cd workspace/backend && git apply ../android-backend.patch)
+          cp android-v2-src/overrides/system_loopback_android.go workspace/backend/system_loopback_android.go
           test -f workspace/backend/system_loopback_android.go
           test -f workspace/backend/web/index.html
           test -f workspace/backend/web/dj.js
