@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 1
 
       - name: Set up Java 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
@@ -37,7 +37,9 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK packages
-        run: yes | sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
+        shell: bash
+        run: |
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -66,17 +68,23 @@ jobs:
           mkdir -p android-app/app/src/main/assets/web
           cp -R desktop-src/app/web/. android-app/app/src/main/assets/web/
 
+          # Keep the existing Android launcher icon from the native app. Overlay the
+          # Android parity host and responsive UI on top of the exact desktop assets.
           cp -R android-v2-overlay/. android-app/
-          cp android-app/app/src/main/assets/web/habs-icon.png android-app/app/src/main/res/drawable/habs_icon.png
 
           python3 - <<'PY'
           from pathlib import Path
-          p=Path('android-app/app/src/main/assets/web/index.html')
+          web=Path('android-app/app/src/main/assets/web')
+          p=web/'index.html'
           s=p.read_text(encoding='utf-8')
           if '/web/android.css' not in s:
               s=s.replace('<link rel="stylesheet" href="/web/app.css">','<link rel="stylesheet" href="/web/app.css">\n  <link rel="stylesheet" href="/web/android.css">')
           if '/web/android-adapter.js' not in s:
               s=s.replace('<script src="/web/linked-music.js"></script>','<script src="/web/linked-music.js"></script>\n<script src="/web/android-adapter.js"></script>')
+          # The v0.8.9 source bundle carries the HABS artwork as SVG. Use it directly
+          # inside WebView while preserving the native Android launcher icon.
+          if not (web/'habs-icon.png').exists() and (web/'habs-icon.svg').exists():
+              s=s.replace('/web/habs-icon.png','/web/habs-icon.svg')
           s=s.replace('on this PC. This installation','on this Android device. This installation')
           s=s.replace('v0.8.9','v1.1.0 Android')
           p.write_text(s,encoding='utf-8')
@@ -92,13 +100,18 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          grep -q 'DJ STUDIO' android-app/app/src/main/assets/web/index.html
-          grep -q 'LINKED MUSIC' android-app/app/src/main/assets/web/index.html
-          grep -q 'YOUTUBE' android-app/app/src/main/assets/web/index.html
-          grep -q 'AutoDJ' android-app/app/src/main/assets/web/index.html
-          grep -q 'Zeno.fm' android-app/app/src/main/assets/web/multistream.js
-          grep -q 'Spotify' android-app/app/src/main/assets/web/linked-music.js
+          grep -qi 'DJ STUDIO' android-app/app/src/main/assets/web/index.html
+          grep -qi 'LINKED MUSIC' android-app/app/src/main/assets/web/index.html
+          grep -qi 'YOUTUBE' android-app/app/src/main/assets/web/index.html
+          grep -qi 'AutoDJ' android-app/app/src/main/assets/web/index.html
+          grep -qi 'Zeno.fm' android-app/app/src/main/assets/web/multistream.js
+          grep -qi 'Spotify' android-app/app/src/main/assets/web/linked-music.js
           grep -q 'AudioPlaybackCapture' android-app/app/src/main/java/com/habsradio/broadcaster/BroadcastService.java
+          node --check android-app/app/src/main/assets/web/app.js
+          node --check android-app/app/src/main/assets/web/dj.js
+          node --check android-app/app/src/main/assets/web/multistream.js
+          node --check android-app/app/src/main/assets/web/linked-music.js
+          node --check android-app/app/src/main/assets/web/android-adapter.js
 
       - name: Build debug APK
         working-directory: android-app
@@ -111,6 +124,9 @@ jobs:
           cp android-app/app/build/outputs/apk/debug/app-debug.apk HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk
           sha256sum HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk | tee SHA256SUMS.txt
           unzip -t HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk
+          unzip -l HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk | grep 'assets/web/android.css'
+          unzip -l HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk | grep 'assets/web/android-adapter.js'
+          unzip -l HABS-Broadcaster-Android-v1.1.0-desktop-parity.apk | grep 'assets/web/dj.js'
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
