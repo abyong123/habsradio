@@ -41,6 +41,10 @@ jobs:
           cat android-v2-src/backend-patch-xz/*.b64 | base64 --decode | xz -dc > workspace/android-backend.patch
           (cd workspace/backend && git apply ../android-backend.patch)
 
+          # Overlay the exact Android-adapted version of the desktop studio UI.
+          base64 --decode android-v2-src/frontend-overrides.tar.gz.b64 > workspace/frontend-overrides.tar.gz
+          tar -xzf workspace/frontend-overrides.tar.gz -C workspace/backend
+
           if [ -f workspace/backend/system_loopback_other.go ]; then
             sed -i '1c //go:build !windows && !darwin && !android' workspace/backend/system_loopback_other.go
           fi
